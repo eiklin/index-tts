@@ -93,6 +93,7 @@ for i in sections_to_run:
         speaker_prompt,
         text=section,
         output_path=str(raw_path),
+        emo_vector=[0, 0, 0, 0, 0, 0, 0, 0],
         verbose=True
     )
 
