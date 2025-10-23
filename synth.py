@@ -1,6 +1,8 @@
 import os
 import re
 import subprocess
+import sys
+import argparse
 from pathlib import Path
 from indextts.infer_v2 import IndexTTS2
 import torch
@@ -17,6 +19,18 @@ tempo_factor = 0.95                  # Slight slowdown (pitch preserved)
 speaker_prompt = "examples/sample.wav"  # Voice reference audio
 cfg_path = "checkpoints/config.yaml"
 model_dir = "checkpoints"
+
+# === PARSE ARGUMENTS ===
+parser = argparse.ArgumentParser(description="Index-TTS2 batch synthesizer")
+parser.add_argument(
+    "segment",
+    type=int,
+    nargs="?",
+    default=None,
+    help="Specify a segment number to re-generate (1-based index). Leave empty to process all."
+)
+args = parser.parse_args()
+regen_segment = args.segment
 
 # === DEVICE AUTO-DETECT ===
 if torch.backends.mps.is_available():
@@ -49,34 +63,40 @@ Path(output_dir).mkdir(exist_ok=True)
 with open(input_file, "r", encoding="utf-8") as f:
     text = f.read()
 
-# Split by major sections marked with "==="
 sections = [seg.strip() for seg in text.split(separator) if seg.strip()]
-print(f"📘 Found {len(sections)} major sections in '{input_file}'")
+total = len(sections)
+print(f"📘 Found {total} major sections in '{input_file}'")
 
-# === PROCESS EACH SECTION ===
-for i, section in enumerate(sections, start=1):
-    # Extract first few visible characters for filename label
+# === DETERMINE WHICH SECTIONS TO RUN ===
+if regen_segment is not None:
+    if regen_segment < 1 or regen_segment > total:
+        sys.exit(f"❌ Invalid segment number: {regen_segment}. Must be between 1 and {total}.")
+    sections_to_run = [regen_segment]
+    print(f"🔁 Re-generating only segment #{regen_segment}")
+else:
+    sections_to_run = range(1, total + 1)
+    print("🚀 Generating all sections")
+
+# === PROCESS EACH SELECTED SECTION ===
+for i in sections_to_run:
+    section = sections[i - 1]
     prefix = re.sub(r"[^\w\u4e00-\u9fff]", "", section[:10]) or f"part{i}"
     base_name = f"{i:02d}_{prefix}"
     raw_path = Path(output_dir) / f"{base_name}_raw.{output_format}"
     slowed_path = Path(output_dir) / f"{base_name}.{output_format}"
 
-    if slowed_path.exists():
-        print(f"⏭️  Skipping [{i}] already exists: {slowed_path.name}")
-        continue
-
-    print(f"\n🎧 [{i}/{len(sections)}] Synthesizing → {base_name}")
+    print(f"\n🎧 [{i}/{total}] Synthesizing → {base_name}")
     print("   Text preview:", section[:80].replace("\n", " "), "...")
 
-    # 1️⃣ Generate speech (IndexTTS2 handles internal segmentation)
+    # 1️⃣ Generate speech
     tts.infer(
-        speaker_prompt,        # positional argument (required)
+        speaker_prompt,
         text=section,
         output_path=str(raw_path),
         verbose=True
     )
 
-    # 2️⃣ Apply tempo adjustment (slightly slower, pitch preserved)
+    # 2️⃣ Apply tempo adjustment (pitch preserved)
     print(f"🎵  Applying tempo factor: {tempo_factor}x")
     subprocess.run([
         "ffmpeg", "-y",
@@ -85,9 +105,8 @@ for i, section in enumerate(sections, start=1):
         str(slowed_path)
     ], check=True)
 
-    # 3️⃣ Clean up temp file
     os.remove(raw_path)
     print(f"✅ Saved slowed file: {slowed_path.name}")
 
-print("\n🎉 All sections synthesized successfully!")
+print("\n🎉 Synthesis complete!")
 print(f"🗂️  Output folder: {output_dir}")
