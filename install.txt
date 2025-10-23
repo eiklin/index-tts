@@ -2,6 +2,7 @@ git clone https://github.com/eiklin/index-tts.git
 cd index-tts
 git lfs pull
 pip install -U uv
+pip install google.colab
 uv sync --all-extras
 uv tool install "huggingface-hub[cli,hf_xet]"
 hf download IndexTeam/IndexTTS-2 --local-dir=checkpoints
