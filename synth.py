@@ -13,11 +13,11 @@ os.environ['PYTORCH_MPS_HIGH_WATERMARK_RATIO'] = '0.0'
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.benchmark = True
 
-# === CONFIGURATION ===
-input_dir = Path("tts_input")
-output_root = Path("tts_output")
+# === CONFIGURATION (Google Drive Paths) ===
+input_dir = Path("/content/drive/MyDrive/index-tts/tts_input")
+output_root = Path("/content/drive/MyDrive/index-tts/tts_output")
 output_format = "mp3"
-separator = "---"                     # <-- Updated delimiter
+separator = "---"
 tempo_factor = 0.95
 speaker_prompt = "examples/sample.wav"
 cfg_path = "checkpoints/config.yaml"
@@ -36,7 +36,7 @@ emotion_map = {
 }
 
 # === CLI ARGUMENTS ===
-parser = argparse.ArgumentParser(description="Index-TTS2 batch synthesizer (A100 optimized, emotion control)")
+parser = argparse.ArgumentParser(description="Index-TTS2 batch synthesizer (A100 optimized, Drive paths)")
 parser.add_argument(
     "segment_positional",
     type=int,
@@ -64,7 +64,7 @@ emo_vector = emotion_map[args.emotion] if args.emotion else [0.0] * 8
 
 # === SUMMARY BANNER ===
 print("\n" + "="*60)
-print("🗂️  Index-TTS2 Batch Synthesis (A100 Optimized)")
+print("🗂️  Index-TTS2 Batch Synthesis (A100 Optimized, Google Drive)")
 print("="*60)
 print(f"📂 Input folder : {input_dir.resolve()}")
 print(f"💾 Output folder: {output_root.resolve()}")
@@ -113,7 +113,7 @@ for txt_path in txt_files:
     with open(txt_path, "r", encoding="utf-8") as f:
         text = f.read()
 
-    # Split using the new delimiter
+    # Split using the delimiter
     sections = [seg.strip() for seg in text.split(separator) if seg.strip()]
     total = len(sections)
     print(f"   ↳ Found {total} major sections")
