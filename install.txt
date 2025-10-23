@@ -1,0 +1,9 @@
+git clone https://github.com/eiklin/index-tts.git
+cd index-tts
+git lfs pull
+pip install -U uv
+uv sync --all-extras
+uv tool install "huggingface-hub[cli,hf_xet]"
+hf download IndexTeam/IndexTTS-2 --local-dir=checkpoints
+
+uv run tools/gpu_check.py
