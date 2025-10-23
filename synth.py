@@ -20,11 +20,14 @@ model_dir = "checkpoints"
 # === DEVICE AUTO-DETECT ===
 if torch.backends.mps.is_available():
     device = "mps"
+    device_name = "Apple Metal Performance Shaders"
 elif torch.cuda.is_available():
     device = "cuda"
+    device_name = "NVIDIA CUDA"
 else:
     device = "cpu"
-print(f"💻 Using device: {device}")
+    device_name = "CPU"
+print(f"💻 Using device: {device_name}")
 
 # === INIT MODEL ===
 print("🔧 Initializing IndexTTS2 model...")
