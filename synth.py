@@ -17,7 +17,7 @@ torch.backends.cudnn.benchmark = True
 input_dir = Path("tts_input")
 output_root = Path("tts_output")
 output_format = "mp3"
-separator = "==="
+separator = "---"                     # <-- Updated delimiter
 tempo_factor = 0.95
 speaker_prompt = "examples/sample.wav"
 cfg_path = "checkpoints/config.yaml"
@@ -71,6 +71,7 @@ print(f"💾 Output folder: {output_root.resolve()}")
 print(f"🎭 Emotion      : {args.emotion or 'none (neutral)'}")
 print(f"🎬 Segment      : {'all' if regen_segment is None else regen_segment}")
 print(f"🎵 Tempo factor : {tempo_factor}")
+print(f"🔹 Delimiter    : {separator}")
 print("="*60 + "\n")
 
 # === INITIALIZE MODEL (A100 optimized) ===
@@ -112,6 +113,7 @@ for txt_path in txt_files:
     with open(txt_path, "r", encoding="utf-8") as f:
         text = f.read()
 
+    # Split using the new delimiter
     sections = [seg.strip() for seg in text.split(separator) if seg.strip()]
     total = len(sections)
     print(f"   ↳ Found {total} major sections")
@@ -134,7 +136,7 @@ for txt_path in txt_files:
         print(f"\n🎧 [{i}/{total}] Synthesizing → {story_name}/{base_name}")
         print("   Text preview:", section[:80].replace("\n", " "), "...")
 
-        # 1️⃣ INFERENCE with selected (or neutral) emotion vector
+        # 1️⃣ INFERENCE
         tts.infer(
             speaker_prompt,
             text=section,
