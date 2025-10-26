@@ -53,7 +53,6 @@ print(f"📘 Checkpoint   : {progress_log}")
 print(f"🎭 Emotion      : {args.emotion or 'none (neutral)'}")
 print(f"🎬 Segment      : {'all' if regen_segment is None else regen_segment}")
 print(f"🎵 Tempo factor : {tempo_factor}")
-print(f"🔹 Delimiter    : {separator}")
 print("="*60 + "\n")
 
 # === LOAD PROGRESS CHECKPOINT ===
