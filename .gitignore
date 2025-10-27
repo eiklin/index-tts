@@ -29,3 +29,9 @@ desktop.ini
 /checkpoints/*
 !/checkpoints/*.yaml
 /outputs/
+
+# custom
+tts_input/
+tts_output/
+examples/
+

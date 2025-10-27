@@ -53,7 +53,12 @@ print(f"📘 Checkpoint   : {progress_log}")
 print(f"🎭 Emotion      : {args.emotion or 'none (neutral)'}")
 print(f"🎬 Segment      : {'all' if regen_segment is None else regen_segment}")
 print(f"🎵 Tempo factor : {tempo_factor}")
+print(f"🔹 Separator    : line breaks")
 print("="*60 + "\n")
+
+# === PREPARE DIRECTORIES ===
+input_dir.mkdir(parents=True, exist_ok=True)
+output_root.mkdir(parents=True, exist_ok=True)
 
 # === LOAD PROGRESS CHECKPOINT ===
 completed_segments = set()
@@ -77,17 +82,6 @@ tts = IndexTTS2(
 tts.device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 print(f"✅ Model loaded successfully! Device = {tts.device}\n")
 
-# === WARM-UP INFERENCE ===
-print("🔥 Performing warm-up inference (Metal kernels compilation)...")
-tts.infer(
-    speaker_prompt,
-    text="Warm-up run for Metal optimization.",
-    output_path="warmup.wav",
-    emo_vector=emo_vector,
-    verbose=False,
-)
-print("✅ Warm-up complete. Proceeding with synthesis.\n")
-
 # === FIND INPUT FILES ===
 txt_files = sorted(input_dir.glob("*.txt"))
 if not txt_files:
@@ -98,15 +92,31 @@ print(f"📘 Found {len(txt_files)} input file(s) in '{input_dir}'")
 for txt_path in txt_files:
     story_name = txt_path.stem
     output_dir = output_root / story_name
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"\n📘 Processing file: {txt_path.name}")
     with open(txt_path, "r", encoding="utf-8") as f:
         text = f.read()
 
+    # Split using line breaks as separators
     sections = [line.strip() for line in text.splitlines() if line.strip()]
     total = len(sections)
-    print(f"   ↳ Found {total} major sections")
+    print(f"   ↳ Found {total} non-empty lines (segments)")
+
+    # === WARM-UP INFERENCE (per story) ===
+    warmup_path = output_dir / "warmup.wav"
+    if not warmup_path.exists():
+        print(f"🔥 Performing warm-up inference for {story_name} (Metal kernels compilation)...")
+        tts.infer(
+            speaker_prompt,
+            text="Warm-up run for Metal optimization.",
+            output_path=str(warmup_path),
+            emo_vector=emo_vector,
+            verbose=False,
+        )
+        print(f"✅ Warm-up complete. Saved: {warmup_path}\n")
+    else:
+        print(f"⚡ Warm-up skipped for {story_name} (already exists)\n")
 
     if regen_segment is not None:
         if regen_segment < 1 or regen_segment > total:
